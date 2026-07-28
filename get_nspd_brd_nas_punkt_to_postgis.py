@@ -8,34 +8,17 @@ import pandas as pd
 
 # ---------- загрузка данных ----------
 
-output_file = r'c:\Dev\postgis_etl\gran_nas_punkt_perm.geojson'
-
+output_file = r'gran_nas_punkt_perm.geojson'
 
 nspd = Nspd(
     client_timeout=20,
     client_retries=5,
-    cache_folder_path=r"c:\maps\geocoder\nspd_cache",
-    cache_ttl=None
+    #cache_folder_path=r"c:\maps\geocoder\nspd_cache",
+    #cache_ttl=None
 )
 
-
-fields_from_nspd = {
-    "cad_num": "Кадастровый номер",
-    "readable_address": "Адрес",
-    "status": "Статус",
-    "land_record_category_type": "Категория земель",
-    "permitted_use_established_by_document": "Назначение",
-    "ownership_type": "Собственность",
-    "cost_value": "Кадастровая стоимость",
-    "determination_couse": "Основание оценки",
-    "land_record_subtype": "Подкатегория землепользования",
-    "land_record_reg_date": "Дата постановки на учёт"
-}
-
-
-
 # ---------- загрузка региона ----------
-region = gpd.read_file(r"c:\maps\general_layers\perm_krai_gran.geojson")
+region = gpd.read_file(r"perm_krai_gran.geojson")
 
 # если там мультиполигон — объединяем в один
 contour = region.geometry.union_all()
@@ -48,10 +31,10 @@ feats = nspd.search_in_contour(contour, layer)
 
 print(f"Найдено {len(feats)} объектов")
 
-'''for feat in feats[:1]:
+for feat in feats[:1]:
     print(feat.properties.options)
     print(feat.properties.model_dump().keys())
-    print(feat.properties.label)'''
+    print(feat.properties.label)
 
 
 rows = []
@@ -80,6 +63,8 @@ gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
 #gdf.to_file(output_file, driver="GeoJSON", encoding="utf-8")
 
 
+#gdf = gpd.read_file(r"c:\Dev\nspd2postgis\gran_nas_punkt_perm_with_name.geojson")
+
 
 DB_CONFIG = {
     "host": "localhost",
@@ -106,8 +91,9 @@ if len(feats) > 0:
 
 
 
-sql = """
+sql_query = """
 INSERT INTO boundaries.nas_poly_nspd (
+    brd_nmb,
     name,
     name_locality,
     category,
@@ -130,6 +116,7 @@ INSERT INTO boundaries.nas_poly_nspd (
     geom
 )
 VALUES (
+    %(brd_nmb)s,
     %(name)s,
     %(name_locality)s,
     %(category)s,
@@ -173,7 +160,7 @@ with psycopg.connect(**DB_CONFIG) as conn:
             if data.get("system_info") is not None:
                 #data["system_info"] = Jsonb(data["system_info"])
                 data["system_info"] = None
-            cur.execute(sql, data)
+            cur.execute(sql_query, data)
 
     conn.commit()
     print(f"✅ Загружено {len(gdf)} объектов в boundaries.nas_poly_nspd")
@@ -187,3 +174,5 @@ SELECT count(*) FROM boundaries.nas_poly_nspd
 print(query)
 rows = execute_query(query)
 print(f'{rows} -  postgres, количество записей в boundaries.nas_poly_nspd')
+
+
