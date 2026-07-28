@@ -5,6 +5,7 @@ import json
 import psycopg
 from psycopg.types.json import Jsonb
 import pandas as pd
+from dotenv import load_dotenv
 
 # ---------- загрузка данных ----------
 
@@ -31,10 +32,10 @@ feats = nspd.search_in_contour(contour, layer)
 
 print(f"Найдено {len(feats)} объектов")
 
-for feat in feats[:1]:
+'''for feat in feats[:1]:
     print(feat.properties.options)
     print(feat.properties.model_dump().keys())
-    print(feat.properties.label)
+    print(feat.properties.label)'''
 
 
 rows = []
@@ -66,11 +67,14 @@ gdf = gpd.GeoDataFrame(rows, crs="EPSG:4326")
 #gdf = gpd.read_file(r"c:\Dev\nspd2postgis\gran_nas_punkt_perm_with_name.geojson")
 
 
+# Загружаем переменные из файла .env в окружение
+load_dotenv()
 DB_CONFIG = {
-    "host": "localhost",
-    "dbname": "gis_home",
-    "user": "postgres",
-    "password": "21194",
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD"),
 }
 
 def execute_query(query, params=None):

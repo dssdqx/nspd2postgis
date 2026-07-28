@@ -1,14 +1,22 @@
 import geopandas as gpd
 import psycopg
 from shapely import to_wkb
+from dotenv import load_dotenv
+import os
+
 
 mo_rf_gran = gpd.read_file(r'c:\maps\general_layers\mo_multi_fed_actual.gpkg')
 
+# Загружаем переменные из файла .env в окружение
+load_dotenv()
+
+# Собираем конфиг напрямую из os.getenv
 DB_CONFIG = {
-    "host": "localhost",
-    "dbname": "gis_home",
-    "user": "postgres",
-    "password": "21194",
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+    "dbname": os.getenv("DB_NAME"),
+    "user": os.getenv("DB_USER", "postgres"),
+    "password": os.getenv("DB_PASSWORD"),
 }
 
 # для проверки структуры таблицы в PostgreSQL
